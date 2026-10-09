@@ -17,7 +17,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_718eff5bf4f3778bf15b515f9b5cf6a7 {
+                #map_37dc210f644a34e10b982954b5cc6a0b {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -50,100 +50,201 @@
             </script>
 
         
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.css"/>
 </head>
 <body>
     
     
-    <div style="
-        position: fixed;
-        bottom: 35px;
-        left: 35px;
-        z-index: 9999;
-        background: white;
-        padding: 12px 16px;
-        border: 1px solid #cccccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        font-family: Arial, sans-serif;
-        font-size: 13px;
-    ">
-        <b>Urban-Pulse Route Legend</b><br><br>
-        <span style="color: blue;">&#9632;</span>
-        Shortest-distance route<br>
-        <span style="color: green;">&#9632;</span>
-        Fastest estimated-time route<br><br>
-        <span style="color: #2878D0;">&#9679;</span>
-        Origin<br>
-        <span style="color: red;">&#9679;</span>
-        Destination
+    <style>
+      .up-panel, .up-legend {
+        box-sizing: border-box;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        color: #172033;
+        background: rgba(255,255,255,0.97);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(15,23,42,0.16);
+        backdrop-filter: blur(8px);
+      }
+      .up-panel {
+        position: fixed; top: 16px; right: 16px; z-index: 9999;
+        width: 300px; padding: 18px;
+      }
+      .up-brand { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
+      .up-logo {
+        width:34px; height:34px; display:flex; align-items:center;
+        justify-content:center; border-radius:10px; color:white;
+        font-size:18px; font-weight:800; background:#0f766e;
+      }
+      .up-title { font-size:17px; font-weight:750; letter-spacing:-0.3px; }
+      .up-subtitle { color:#64748b; font-size:11px; margin:0 0 15px 44px; }
+      .up-route {
+        border:1px solid #e5eaf1; border-radius:12px;
+        padding:12px; margin-top:10px;
+      }
+      .up-route-head { display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; }
+      .up-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+      .up-metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+      .up-metric-label { font-size:10px; color:#64748b; margin-bottom:3px; }
+      .up-metric-value { font-size:17px; font-weight:750; letter-spacing:-0.4px; }
+      .up-fastest { background:#f0fdf4; border-color:#bbf7d0; }
+      .up-savings {
+        margin-top:12px; padding:10px 11px; border-radius:10px;
+        background:#ecfdf5; color:#166534; font-size:12px; line-height:1.45;
+      }
+      .up-note { margin-top:12px; color:#64748b; font-size:10px; line-height:1.45; }
+      .up-legend { position:fixed; bottom:24px; left:24px; z-index:9999; padding:13px 15px; min-width:200px; }
+      .up-legend-title { font-size:12px; font-weight:750; margin-bottom:10px; }
+      .up-legend-row { display:flex; align-items:center; gap:9px; font-size:11px; margin:7px 0; color:#334155; }
+      .up-line { width:23px; height:4px; border-radius:4px; display:inline-block; }
+      .up-pin { width:9px; height:9px; border-radius:50%; display:inline-block; }
+      @media (max-width: 600px) {
+        .up-panel { width: min(270px, calc(100vw - 28px)); top:10px; right:10px; padding:13px; }
+        .up-legend { left:10px; bottom:12px; min-width:170px; padding:10px 12px; }
+        .up-metric-value { font-size:15px; }
+      }
+    </style>
+
+    <div class="up-panel">
+      <div class="up-brand">
+        <div class="up-logo">U</div>
+        <div class="up-title">UrbanPulse</div>
+      </div>
+      <div class="up-subtitle">SMART ROUTE COMPARISON</div>
+
+      <div class="up-route">
+        <div class="up-route-head">
+          <span class="up-dot" style="background:#2563EB"></span>
+          <span>Shortest distance</span>
+        </div>
+        <div class="up-metrics">
+          <div>
+            <div class="up-metric-label">DISTANCE</div>
+            <div class="up-metric-value">6.63 <span style="font-size:11px;font-weight:600">km</span></div>
+          </div>
+          <div>
+            <div class="up-metric-label">EST. TIME</div>
+            <div class="up-metric-value">10.6 <span style="font-size:11px;font-weight:600">min</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="up-route up-fastest">
+        <div class="up-route-head">
+          <span class="up-dot" style="background:#16A34A"></span>
+          <span>Fastest estimated time</span>
+        </div>
+        <div class="up-metrics">
+          <div>
+            <div class="up-metric-label">DISTANCE</div>
+            <div class="up-metric-value">7.40 <span style="font-size:11px;font-weight:600">km</span></div>
+          </div>
+          <div>
+            <div class="up-metric-label">EST. TIME</div>
+            <div class="up-metric-value">8.5 <span style="font-size:11px;font-weight:600">min</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="up-savings">
+        <strong>⚡ Faster by 2.1 minutes</strong><br>
+        0.77 km longer than the shortest route.
+      </div>
+      <div class="up-note">
+        Travel times are estimates based on road-speed data, not live traffic.
+      </div>
     </div>
     
     
-    <div style="
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        z-index: 9999;
-        background: white;
-        padding: 14px 18px;
-        border: 1px solid #cccccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        font-family: Arial, sans-serif;
-        font-size: 13px;
-        min-width: 220px;
-    ">
-        <h4 style="margin: 0 0 10px 0;">Urban-Pulse</h4>
-
-        <b style="color: blue;">Shortest Route</b><br>
-        Distance: 6.63 km<br>
-        Estimated time: 10.6 min
-
-        <hr>
-
-        <b style="color: green;">Fastest Route</b><br>
-        Distance: 7.40 km<br>
-        Estimated time: 8.5 min
-
-        <hr>
-
-        <small>Times are estimates, not live traffic.</small>
+    <div class="up-legend">
+      <div class="up-legend-title">MAP LEGEND</div>
+      <div class="up-legend-row"><span class="up-line" style="background:#2563EB"></span> Shortest-distance route</div>
+      <div class="up-legend-row"><span class="up-line" style="background:#16A34A"></span> Fastest-time route</div>
+      <div class="up-legend-row"><span class="up-pin" style="background:#2878D0"></span> Origin</div>
+      <div class="up-legend-row"><span class="up-pin" style="background:#DC2626"></span> Destination</div>
+      <div style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:9px;color:#64748b;font-size:10px">
+        Use the layer control to show or hide routes.
+      </div>
     </div>
     
     
-            <div class="folium-map" id="map_718eff5bf4f3778bf15b515f9b5cf6a7" ></div>
+            <div class="folium-map" id="map_37dc210f644a34e10b982954b5cc6a0b" ></div>
         
 </body>
 <script>
     
     
-            var map_718eff5bf4f3778bf15b515f9b5cf6a7 = L.map(
-                "map_718eff5bf4f3778bf15b515f9b5cf6a7",
+            var map_37dc210f644a34e10b982954b5cc6a0b = L.map(
+                "map_37dc210f644a34e10b982954b5cc6a0b",
                 {
                     center: [44.9587, -93.21549999999999],
                     crs: L.CRS.EPSG3857,
                     ...{
   "zoom": 13,
   "zoomControl": true,
-  "preferCanvas": false,
+  "preferCanvas": true,
 }
 
                 }
             );
+            L.control.scale().addTo(map_37dc210f644a34e10b982954b5cc6a0b);
 
             
 
         
     
-            var poly_line_e8c36c692f2c9f74f9914b5bcc0c0ca7 = L.polyline(
+            var tile_layer_e619af43c7c178ab968a18c9f6771165 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_e619af43c7c178ab968a18c9f6771165.addTo(map_37dc210f644a34e10b982954b5cc6a0b);
+        
+    
+            L.control.fullscreen(
+                {
+  "position": "topleft",
+  "title": "Enter fullscreen",
+  "titleCancel": "Exit fullscreen",
+  "forceSeparateButton": true,
+}
+            ).addTo(map_37dc210f644a34e10b982954b5cc6a0b);
+        
+    
+            var feature_group_66ce268c4643c08cdbabccaa511758e6 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_d5453d1bb97630eb235fe13506b0b32d = L.polyline(
                 [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9722126, -93.2519531], [44.9716469, -93.2494345], [44.9717494, -93.2494343], [44.9721885, -93.2472362], [44.9713314, -93.2472467], [44.970231, -93.2472658], [44.9700486, -93.2468578], [44.9695424, -93.2456639], [44.969051, -93.2444931], [44.9688651, -93.2440743], [44.9681893, -93.242484], [44.9675353, -93.2409252], [44.9671804, -93.2401021], [44.9668284, -93.239314], [44.9663045, -93.238047], [44.965503, -93.236162], [44.9653298, -93.235749], [44.9650709, -93.2351425], [44.9646429, -93.2341765], [44.9641451, -93.2329964], [44.9640172, -93.2326912], [44.963974, -93.232582], [44.9636251, -93.231748], [44.9631627, -93.2306884], [44.962774, -93.2298327], [44.9627724, -93.2282557], [44.962772, -93.2281693], [44.9627808, -93.2268789], [44.9625818, -93.225789], [44.9617887, -93.2245572], [44.9617397, -93.2244847], [44.9607161, -93.2229286], [44.959233, -93.2207431], [44.9582846, -93.2193303], [44.9573997, -93.218245], [44.9574347, -93.2180007], [44.9558391, -93.2150293], [44.9545339, -93.2133619], [44.9509956, -93.207972], [44.9500797, -93.2061893], [44.9496286, -93.2057018], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
-                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.8, "smoothFactor": 1.0, "stroke": true, "weight": 6}
-            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+                {"bubblingMouseEvents": true, "color": "#FFFFFF", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#FFFFFF", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.95, "smoothFactor": 1.0, "stroke": true, "weight": 10}
+            ).addTo(feature_group_66ce268c4643c08cdbabccaa511758e6);
         
     
-            poly_line_e8c36c692f2c9f74f9914b5bcc0c0ca7.bindTooltip(
+            var poly_line_9dacfba5e71303941dd5f94eef2de969 = L.polyline(
+                [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9722126, -93.2519531], [44.9716469, -93.2494345], [44.9717494, -93.2494343], [44.9721885, -93.2472362], [44.9713314, -93.2472467], [44.970231, -93.2472658], [44.9700486, -93.2468578], [44.9695424, -93.2456639], [44.969051, -93.2444931], [44.9688651, -93.2440743], [44.9681893, -93.242484], [44.9675353, -93.2409252], [44.9671804, -93.2401021], [44.9668284, -93.239314], [44.9663045, -93.238047], [44.965503, -93.236162], [44.9653298, -93.235749], [44.9650709, -93.2351425], [44.9646429, -93.2341765], [44.9641451, -93.2329964], [44.9640172, -93.2326912], [44.963974, -93.232582], [44.9636251, -93.231748], [44.9631627, -93.2306884], [44.962774, -93.2298327], [44.9627724, -93.2282557], [44.962772, -93.2281693], [44.9627808, -93.2268789], [44.9625818, -93.225789], [44.9617887, -93.2245572], [44.9617397, -93.2244847], [44.9607161, -93.2229286], [44.959233, -93.2207431], [44.9582846, -93.2193303], [44.9573997, -93.218245], [44.9574347, -93.2180007], [44.9558391, -93.2150293], [44.9545339, -93.2133619], [44.9509956, -93.207972], [44.9500797, -93.2061893], [44.9496286, -93.2057018], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
+                {"bubblingMouseEvents": true, "color": "#2563EB", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#2563EB", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.95, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(feature_group_66ce268c4643c08cdbabccaa511758e6);
+        
+    
+            poly_line_9dacfba5e71303941dd5f94eef2de969.bindTooltip(
                 `<div>
-                     Shortest-distance route
+                     Shortest route · 6.63 km · 10.6 min
                  </div>`,
                 {
   "sticky": true,
@@ -151,15 +252,30 @@
             );
         
     
-            var poly_line_59f0644def7d018ee370d3a89ddd268c = L.polyline(
+            feature_group_66ce268c4643c08cdbabccaa511758e6.addTo(map_37dc210f644a34e10b982954b5cc6a0b);
+        
+    
+            var feature_group_7e25db7ee8dcc072680584398ce5a105 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_1cf6c18a759470f37f62eda8d3fd3fd1 = L.polyline(
                 [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9709711, -93.2526215], [44.9686054, -93.2544283], [44.9664994, -93.25334], [44.9650774, -93.2515698], [44.9632363, -93.2501312], [44.9627755, -93.249736], [44.9573335, -93.2443202], [44.9555439, -93.2431504], [44.9519662, -93.2410944], [44.9517501, -93.2409468], [44.9484371, -93.2386859], [44.9483157, -93.2385937], [44.9483104, -93.237683], [44.9483108, -93.2359467], [44.9483842, -93.2348541], [44.9483836, -93.2342492], [44.9483897, -93.2331996], [44.9483846, -93.231598], [44.9483852, -93.2300257], [44.9483866, -93.228432], [44.9483907, -93.2270913], [44.9483844, -93.2257137], [44.9483818, -93.2243304], [44.9483782, -93.2229298], [44.948374, -93.2216651], [44.9483683, -93.2203932], [44.9483671, -93.2191136], [44.9483659, -93.2178466], [44.9483618, -93.2165638], [44.9483684, -93.2152893], [44.9483633, -93.2140102], [44.9483652, -93.2127438], [44.9483617, -93.2114581], [44.9483613, -93.2113963], [44.9483598, -93.2101794], [44.948358, -93.2088979], [44.9483574, -93.2087628], [44.9483564, -93.2076346], [44.9483606, -93.2063938], [44.948375, -93.205537], [44.9477923, -93.2050246], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
-                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "green", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.8, "smoothFactor": 1.0, "stroke": true, "weight": 5}
-            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+                {"bubblingMouseEvents": true, "color": "#FFFFFF", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#FFFFFF", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.95, "smoothFactor": 1.0, "stroke": true, "weight": 9}
+            ).addTo(feature_group_7e25db7ee8dcc072680584398ce5a105);
         
     
-            poly_line_59f0644def7d018ee370d3a89ddd268c.bindTooltip(
+            var poly_line_ebf371139891fb2802c886dbfc4f3c4a = L.polyline(
+                [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9709711, -93.2526215], [44.9686054, -93.2544283], [44.9664994, -93.25334], [44.9650774, -93.2515698], [44.9632363, -93.2501312], [44.9627755, -93.249736], [44.9573335, -93.2443202], [44.9555439, -93.2431504], [44.9519662, -93.2410944], [44.9517501, -93.2409468], [44.9484371, -93.2386859], [44.9483157, -93.2385937], [44.9483104, -93.237683], [44.9483108, -93.2359467], [44.9483842, -93.2348541], [44.9483836, -93.2342492], [44.9483897, -93.2331996], [44.9483846, -93.231598], [44.9483852, -93.2300257], [44.9483866, -93.228432], [44.9483907, -93.2270913], [44.9483844, -93.2257137], [44.9483818, -93.2243304], [44.9483782, -93.2229298], [44.948374, -93.2216651], [44.9483683, -93.2203932], [44.9483671, -93.2191136], [44.9483659, -93.2178466], [44.9483618, -93.2165638], [44.9483684, -93.2152893], [44.9483633, -93.2140102], [44.9483652, -93.2127438], [44.9483617, -93.2114581], [44.9483613, -93.2113963], [44.9483598, -93.2101794], [44.948358, -93.2088979], [44.9483574, -93.2087628], [44.9483564, -93.2076346], [44.9483606, -93.2063938], [44.948375, -93.205537], [44.9477923, -93.2050246], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
+                {"bubblingMouseEvents": true, "color": "#16A34A", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#16A34A", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.98, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(feature_group_7e25db7ee8dcc072680584398ce5a105);
+        
+    
+            poly_line_ebf371139891fb2802c886dbfc4f3c4a.bindTooltip(
                 `<div>
-                     Fastest estimated-time route
+                     Fastest route · 7.40 km · 8.5 min
                  </div>`,
                 {
   "sticky": true,
@@ -167,14 +283,17 @@
             );
         
     
-            var marker_33e542736d269d27b00702b89ed46540 = L.marker(
+            feature_group_7e25db7ee8dcc072680584398ce5a105.addTo(map_37dc210f644a34e10b982954b5cc6a0b);
+        
+    
+            var marker_476d5e66332db46908a37801b34ead64 = L.marker(
                 [44.9778, -93.265],
                 {
 }
-            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+            ).addTo(map_37dc210f644a34e10b982954b5cc6a0b);
         
     
-            var icon_5f3e3124ebba8ce1e1c1404835762308 = L.AwesomeMarkers.icon(
+            var icon_9ff8f25db1b62f970da9e277979c1ddf = L.AwesomeMarkers.icon(
                 {
   "markerColor": "blue",
   "iconColor": "white",
@@ -185,7 +304,24 @@
             );
         
     
-            marker_33e542736d269d27b00702b89ed46540.bindTooltip(
+        var popup_1f67a89c4571d4621687c230ca6ae6a4 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_40c5bf3e62e7675bc736b510004c59e1 = $(`<div id="html_40c5bf3e62e7675bc736b510004c59e1" style="width: 100.0%; height: 100.0%;"><b>Origin</b><br>Minneapolis city centre</div>`)[0];
+                popup_1f67a89c4571d4621687c230ca6ae6a4.setContent(html_40c5bf3e62e7675bc736b510004c59e1);
+            
+        
+
+        marker_476d5e66332db46908a37801b34ead64.bindPopup(popup_1f67a89c4571d4621687c230ca6ae6a4)
+        ;
+
+        
+    
+    
+            marker_476d5e66332db46908a37801b34ead64.bindTooltip(
                 `<div>
                      Origin
                  </div>`,
@@ -195,28 +331,45 @@
             );
         
     
-                marker_33e542736d269d27b00702b89ed46540.setIcon(icon_5f3e3124ebba8ce1e1c1404835762308);
+                marker_476d5e66332db46908a37801b34ead64.setIcon(icon_9ff8f25db1b62f970da9e277979c1ddf);
             
     
-            var marker_61c54402bcbf086f293a3398c8b9f3bf = L.marker(
+            var marker_3433245c29f02a2de8f22d83c22dd3e9 = L.marker(
                 [44.9396, -93.166],
                 {
 }
-            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+            ).addTo(map_37dc210f644a34e10b982954b5cc6a0b);
         
     
-            var icon_35480609c022bdee42ce17b45f31057f = L.AwesomeMarkers.icon(
+            var icon_bdf99389f9ba93981d6325d72ad5962d = L.AwesomeMarkers.icon(
                 {
   "markerColor": "red",
   "iconColor": "white",
-  "icon": "stop",
+  "icon": "flag",
   "prefix": "glyphicon",
   "extraClasses": "fa-rotate-0",
 }
             );
         
     
-            marker_61c54402bcbf086f293a3398c8b9f3bf.bindTooltip(
+        var popup_7e33622ed2bc104a4c68f6e017aec067 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a2011c0fd41e31d828fbf68a11ffa12b = $(`<div id="html_a2011c0fd41e31d828fbf68a11ffa12b" style="width: 100.0%; height: 100.0%;"><b>Destination</b><br>Destination point</div>`)[0];
+                popup_7e33622ed2bc104a4c68f6e017aec067.setContent(html_a2011c0fd41e31d828fbf68a11ffa12b);
+            
+        
+
+        marker_3433245c29f02a2de8f22d83c22dd3e9.bindPopup(popup_7e33622ed2bc104a4c68f6e017aec067)
+        ;
+
+        
+    
+    
+            marker_3433245c29f02a2de8f22d83c22dd3e9.bindTooltip(
                 `<div>
                      Destination
                  </div>`,
@@ -226,7 +379,34 @@
             );
         
     
-                marker_61c54402bcbf086f293a3398c8b9f3bf.setIcon(icon_35480609c022bdee42ce17b45f31057f);
+                marker_3433245c29f02a2de8f22d83c22dd3e9.setIcon(icon_bdf99389f9ba93981d6325d72ad5962d);
             
+    
+            var layer_control_5c838869e1f0c3731eb01e9fe7bd4c84_layers = {
+                base_layers : {
+                    "openstreetmap" : tile_layer_e619af43c7c178ab968a18c9f6771165,
+                },
+                overlays :  {
+                    "Shortest-distance route" : feature_group_66ce268c4643c08cdbabccaa511758e6,
+                    "Fastest estimated-time route" : feature_group_7e25db7ee8dcc072680584398ce5a105,
+                },
+            };
+            let layer_control_5c838869e1f0c3731eb01e9fe7bd4c84 = L.control.layers(
+                layer_control_5c838869e1f0c3731eb01e9fe7bd4c84_layers.base_layers,
+                layer_control_5c838869e1f0c3731eb01e9fe7bd4c84_layers.overlays,
+                {
+  "position": "topleft",
+  "collapsed": true,
+  "autoZIndex": true,
+}
+            ).addTo(map_37dc210f644a34e10b982954b5cc6a0b);
+
+        
+    
+            map_37dc210f644a34e10b982954b5cc6a0b.fitBounds(
+                [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9722126, -93.2519531], [44.9716469, -93.2494345], [44.9717494, -93.2494343], [44.9721885, -93.2472362], [44.9713314, -93.2472467], [44.970231, -93.2472658], [44.9700486, -93.2468578], [44.9695424, -93.2456639], [44.969051, -93.2444931], [44.9688651, -93.2440743], [44.9681893, -93.242484], [44.9675353, -93.2409252], [44.9671804, -93.2401021], [44.9668284, -93.239314], [44.9663045, -93.238047], [44.965503, -93.236162], [44.9653298, -93.235749], [44.9650709, -93.2351425], [44.9646429, -93.2341765], [44.9641451, -93.2329964], [44.9640172, -93.2326912], [44.963974, -93.232582], [44.9636251, -93.231748], [44.9631627, -93.2306884], [44.962774, -93.2298327], [44.9627724, -93.2282557], [44.962772, -93.2281693], [44.9627808, -93.2268789], [44.9625818, -93.225789], [44.9617887, -93.2245572], [44.9617397, -93.2244847], [44.9607161, -93.2229286], [44.959233, -93.2207431], [44.9582846, -93.2193303], [44.9573997, -93.218245], [44.9574347, -93.2180007], [44.9558391, -93.2150293], [44.9545339, -93.2133619], [44.9509956, -93.207972], [44.9500797, -93.2061893], [44.9496286, -93.2057018], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139], [44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9709711, -93.2526215], [44.9686054, -93.2544283], [44.9664994, -93.25334], [44.9650774, -93.2515698], [44.9632363, -93.2501312], [44.9627755, -93.249736], [44.9573335, -93.2443202], [44.9555439, -93.2431504], [44.9519662, -93.2410944], [44.9517501, -93.2409468], [44.9484371, -93.2386859], [44.9483157, -93.2385937], [44.9483104, -93.237683], [44.9483108, -93.2359467], [44.9483842, -93.2348541], [44.9483836, -93.2342492], [44.9483897, -93.2331996], [44.9483846, -93.231598], [44.9483852, -93.2300257], [44.9483866, -93.228432], [44.9483907, -93.2270913], [44.9483844, -93.2257137], [44.9483818, -93.2243304], [44.9483782, -93.2229298], [44.948374, -93.2216651], [44.9483683, -93.2203932], [44.9483671, -93.2191136], [44.9483659, -93.2178466], [44.9483618, -93.2165638], [44.9483684, -93.2152893], [44.9483633, -93.2140102], [44.9483652, -93.2127438], [44.9483617, -93.2114581], [44.9483613, -93.2113963], [44.9483598, -93.2101794], [44.948358, -93.2088979], [44.9483574, -93.2087628], [44.9483564, -93.2076346], [44.9483606, -93.2063938], [44.948375, -93.205537], [44.9477923, -93.2050246], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
+                {"padding": [55, 55]}
+            );
+        
 </script>
 </html>
