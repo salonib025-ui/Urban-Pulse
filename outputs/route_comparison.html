@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_718eff5bf4f3778bf15b515f9b5cf6a7 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+    <div style="
+        position: fixed;
+        bottom: 35px;
+        left: 35px;
+        z-index: 9999;
+        background: white;
+        padding: 12px 16px;
+        border: 1px solid #cccccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+    ">
+        <b>Urban-Pulse Route Legend</b><br><br>
+        <span style="color: blue;">&#9632;</span>
+        Shortest-distance route<br>
+        <span style="color: green;">&#9632;</span>
+        Fastest estimated-time route<br><br>
+        <span style="color: #2878D0;">&#9679;</span>
+        Origin<br>
+        <span style="color: red;">&#9679;</span>
+        Destination
+    </div>
+    
+    
+    <div style="
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 9999;
+        background: white;
+        padding: 14px 18px;
+        border: 1px solid #cccccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        min-width: 220px;
+    ">
+        <h4 style="margin: 0 0 10px 0;">Urban-Pulse</h4>
+
+        <b style="color: blue;">Shortest Route</b><br>
+        Distance: 6.63 km<br>
+        Estimated time: 10.6 min
+
+        <hr>
+
+        <b style="color: green;">Fastest Route</b><br>
+        Distance: 7.40 km<br>
+        Estimated time: 8.5 min
+
+        <hr>
+
+        <small>Times are estimates, not live traffic.</small>
+    </div>
+    
+    
+            <div class="folium-map" id="map_718eff5bf4f3778bf15b515f9b5cf6a7" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_718eff5bf4f3778bf15b515f9b5cf6a7 = L.map(
+                "map_718eff5bf4f3778bf15b515f9b5cf6a7",
+                {
+                    center: [44.9587, -93.21549999999999],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var poly_line_e8c36c692f2c9f74f9914b5bcc0c0ca7 = L.polyline(
+                [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9722126, -93.2519531], [44.9716469, -93.2494345], [44.9717494, -93.2494343], [44.9721885, -93.2472362], [44.9713314, -93.2472467], [44.970231, -93.2472658], [44.9700486, -93.2468578], [44.9695424, -93.2456639], [44.969051, -93.2444931], [44.9688651, -93.2440743], [44.9681893, -93.242484], [44.9675353, -93.2409252], [44.9671804, -93.2401021], [44.9668284, -93.239314], [44.9663045, -93.238047], [44.965503, -93.236162], [44.9653298, -93.235749], [44.9650709, -93.2351425], [44.9646429, -93.2341765], [44.9641451, -93.2329964], [44.9640172, -93.2326912], [44.963974, -93.232582], [44.9636251, -93.231748], [44.9631627, -93.2306884], [44.962774, -93.2298327], [44.9627724, -93.2282557], [44.962772, -93.2281693], [44.9627808, -93.2268789], [44.9625818, -93.225789], [44.9617887, -93.2245572], [44.9617397, -93.2244847], [44.9607161, -93.2229286], [44.959233, -93.2207431], [44.9582846, -93.2193303], [44.9573997, -93.218245], [44.9574347, -93.2180007], [44.9558391, -93.2150293], [44.9545339, -93.2133619], [44.9509956, -93.207972], [44.9500797, -93.2061893], [44.9496286, -93.2057018], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
+                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.8, "smoothFactor": 1.0, "stroke": true, "weight": 6}
+            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+        
+    
+            poly_line_e8c36c692f2c9f74f9914b5bcc0c0ca7.bindTooltip(
+                `<div>
+                     Shortest-distance route
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_59f0644def7d018ee370d3a89ddd268c = L.polyline(
+                [[44.9774781, -93.2643722], [44.9769033, -93.2630272], [44.9763306, -93.2616513], [44.9757463, -93.2602749], [44.9751983, -93.2589334], [44.974934, -93.2572648], [44.9730239, -93.2546908], [44.9709711, -93.2526215], [44.9686054, -93.2544283], [44.9664994, -93.25334], [44.9650774, -93.2515698], [44.9632363, -93.2501312], [44.9627755, -93.249736], [44.9573335, -93.2443202], [44.9555439, -93.2431504], [44.9519662, -93.2410944], [44.9517501, -93.2409468], [44.9484371, -93.2386859], [44.9483157, -93.2385937], [44.9483104, -93.237683], [44.9483108, -93.2359467], [44.9483842, -93.2348541], [44.9483836, -93.2342492], [44.9483897, -93.2331996], [44.9483846, -93.231598], [44.9483852, -93.2300257], [44.9483866, -93.228432], [44.9483907, -93.2270913], [44.9483844, -93.2257137], [44.9483818, -93.2243304], [44.9483782, -93.2229298], [44.948374, -93.2216651], [44.9483683, -93.2203932], [44.9483671, -93.2191136], [44.9483659, -93.2178466], [44.9483618, -93.2165638], [44.9483684, -93.2152893], [44.9483633, -93.2140102], [44.9483652, -93.2127438], [44.9483617, -93.2114581], [44.9483613, -93.2113963], [44.9483598, -93.2101794], [44.948358, -93.2088979], [44.9483574, -93.2087628], [44.9483564, -93.2076346], [44.9483606, -93.2063938], [44.948375, -93.205537], [44.9477923, -93.2050246], [44.9476085, -93.2046193], [44.9450904, -93.2034418], [44.9433678, -93.2031139]],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "green", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.8, "smoothFactor": 1.0, "stroke": true, "weight": 5}
+            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+        
+    
+            poly_line_59f0644def7d018ee370d3a89ddd268c.bindTooltip(
+                `<div>
+                     Fastest estimated-time route
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_33e542736d269d27b00702b89ed46540 = L.marker(
+                [44.9778, -93.265],
+                {
+}
+            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+        
+    
+            var icon_5f3e3124ebba8ce1e1c1404835762308 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+            marker_33e542736d269d27b00702b89ed46540.bindTooltip(
+                `<div>
+                     Origin
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_33e542736d269d27b00702b89ed46540.setIcon(icon_5f3e3124ebba8ce1e1c1404835762308);
+            
+    
+            var marker_61c54402bcbf086f293a3398c8b9f3bf = L.marker(
+                [44.9396, -93.166],
+                {
+}
+            ).addTo(map_718eff5bf4f3778bf15b515f9b5cf6a7);
+        
+    
+            var icon_35480609c022bdee42ce17b45f31057f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+            marker_61c54402bcbf086f293a3398c8b9f3bf.bindTooltip(
+                `<div>
+                     Destination
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_61c54402bcbf086f293a3398c8b9f3bf.setIcon(icon_35480609c022bdee42ce17b45f31057f);
+            
+</script>
+</html>
