@@ -1,0 +1,20 @@
+feature,importance,feature_group
+numeric__hour,0.839457938344093,hour
+numeric__day_of_week_num,0.06401310731574021,day_of_week_num
+numeric__is_weekend,0.04689178393699434,is_weekend
+numeric__temp_celsius,0.027321091523034104,temp_celsius
+numeric__month,0.00958591019306723,month
+numeric__clouds_all,0.00563189393072672,clouds_all
+numeric__rain_1h,0.002633954044879476,rain_1h
+categorical__weather_main_Clouds,0.0017050969864316871,weather: Clouds
+categorical__weather_main_Clear,0.0006131859170712054,weather: Clear
+categorical__weather_main_Mist,0.0005647229548559249,weather: Mist
+categorical__weather_main_Snow,0.00046055508056699624,weather: Snow
+categorical__weather_main_Rain,0.000373411349522632,weather: Rain
+categorical__weather_main_Haze,0.00027515404505333216,weather: Haze
+numeric__snow_1h,0.00013608252877376706,snow_1h
+categorical__weather_main_Thunderstorm,0.00013308832829841619,weather: Thunderstorm
+categorical__weather_main_Fog,0.00013236536321290312,weather: Fog
+categorical__weather_main_Drizzle,7.06581576781659e-05,weather: Drizzle
+categorical__weather_main_Smoke,0.0,weather: Smoke
+categorical__weather_main_Squall,0.0,weather: Squall
