@@ -1,333 +1,298 @@
-from pathlib import Path
+"""
+UrbanPulse Interactive Route Optimizer
+Run from the UrbanPulse project root:
+    python src/route_optimizer.py
 
-import folium
+Install dependencies:
+    python -m pip install flask osmnx networkx
+"""
+from __future__ import annotations
+
+import json
+import os
+import threading
+import webbrowser
+from pathlib import Path
+from typing import Any
+
+import flask
+from flask import Flask, jsonify, request
 import networkx as nx
 import osmnx as ox
-from folium.plugins import Fullscreen
 
-# Output paths
+APP_TITLE = "UrbanPulse | Interactive Route Optimizer"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
-OUTPUT_DIR.mkdir(exist_ok=True)
+GRAPH_PATH = OUTPUT_DIR / "minneapolis_drive.graphml"
+HOST = "127.0.0.1"
+PORT = int(os.environ.get("URBANPULSE_PORT", "5000"))
 
-MAP_FILE = OUTPUT_DIR / "route_comparison.html"
+app = Flask(__name__)
+_graph: nx.MultiDiGraph | None = None
+_graph_lock = threading.Lock()
 
-# Minneapolis, Minnesota
-PLACE = "Minneapolis, Minnesota, USA"
+DEFAULT_ORIGIN = {"name": "Minneapolis City Hall", "lat": 44.9778, "lon": -93.2650}
+DEFAULT_DESTINATION = {"name": "Walker Art Center", "lat": 44.9672, "lon": -93.2887}
 
 
-def build_road_network(place):
-    """Download a drivable road network and estimate travel speeds."""
-    print(f"Downloading road network for {place}...")
-
-    graph = ox.graph_from_place(
-        place,
-        network_type="drive",
-        simplify=True
-    )
-    graph = ox.add_edge_speeds(graph)
-    graph = ox.add_edge_travel_times(graph)
-
-    print(
-        f"Road network loaded: "
-        f"{len(graph.nodes)} intersections/nodes, "
-        f"{len(graph.edges)} road segments."
-    )
+def _ensure_travel_times(graph):
+    """Add speed and travel-time attributes if missing."""
+    try:
+        graph = ox.routing.add_edge_speeds(graph)
+        graph = ox.routing.add_edge_travel_times(graph)
+    except Exception:
+        for _, _, _, data in graph.edges(keys=True, data=True):
+            length = float(data.get("length", 1.0) or 1.0)
+            speed = float(data.get("speed_kph", 30.0) or 30.0)
+            data.setdefault("travel_time", length / max(speed / 3.6, 0.1))
+            data.setdefault("length", length)
     return graph
 
 
-def find_routes(graph, origin, destination):
-    """Find shortest-distance and estimated-fastest routes."""
-    origin_node = ox.distance.nearest_nodes(
-        graph, origin[1], origin[0]
-    )
-    destination_node = ox.distance.nearest_nodes(
-        graph, destination[1], destination[0]
-    )
+def get_graph():
+    """Load the cached road graph, or download Minneapolis driving roads."""
+    global _graph
+    if _graph is not None:
+        return _graph
+    with _graph_lock:
+        if _graph is not None:
+            return _graph
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        if GRAPH_PATH.exists():
+            print(f"Loading cached road network: {GRAPH_PATH}")
+            graph = ox.load_graphml(GRAPH_PATH)
+        else:
+            print("Downloading Minneapolis driving network from OpenStreetMap...")
+            print("The first download may take a few minutes.")
+            graph = ox.graph_from_place(
+                "Minneapolis, Minnesota, USA", network_type="drive", simplify=True
+            )
+            ox.save_graphml(graph, GRAPH_PATH)
+            print(f"Cached road network at: {GRAPH_PATH}")
+        _graph = _ensure_travel_times(graph)
+        print(f"Road network ready: {len(_graph.nodes):,} nodes, {len(_graph.edges):,} edges")
+        return _graph
 
-    shortest_route = nx.shortest_path(
-        graph, origin_node, destination_node, weight="length"
-    )
-    fastest_route = nx.shortest_path(
-        graph, origin_node, destination_node, weight="travel_time"
-    )
 
-    return shortest_route, fastest_route
+def nearest_node(lat, lon):
+    return ox.distance.nearest_nodes(get_graph(), X=lon, Y=lat)
 
 
-def route_metrics(graph, route):
-    """Return route distance in kilometres and estimated time in minutes."""
-    distance_m = nx.path_weight(graph, route, weight="length")
-    time_s = nx.path_weight(graph, route, weight="travel_time")
-    return distance_m / 1000, time_s / 60
-
-
-def create_route_map(graph, shortest_route, fastest_route, origin, destination):
-    """Create a polished interactive map comparing both routes."""
-
-    shortest_km, shortest_min = route_metrics(graph, shortest_route)
-    fastest_km, fastest_min = route_metrics(graph, fastest_route)
-
-    time_saved = shortest_min - fastest_min
-    extra_distance = fastest_km - shortest_km
-
-    shortest_coords = [
-        (graph.nodes[node]["y"], graph.nodes[node]["x"])
-        for node in shortest_route
-    ]
-    fastest_coords = [
-        (graph.nodes[node]["y"], graph.nodes[node]["x"])
-        for node in fastest_route
-    ]
-
-    center = [
-        (origin[0] + destination[0]) / 2,
-        (origin[1] + destination[1]) / 2
-    ]
-
-    # Keep OpenStreetMap as the basemap. Open this HTML through localhost
-    # if opening it directly as a file causes tile requests to return 403.
-    route_map = folium.Map(
-        location=center,
-        zoom_start=13,
-        tiles="OpenStreetMap",
-        control_scale=True,
-        prefer_canvas=True
+def _edge_for_weight(edge_data, weight):
+    return min(
+        edge_data.values(),
+        key=lambda d: float(d.get(weight, d.get("length", 1.0)) or 1.0),
     )
 
-    # Make map controls more useful for a demo/presentation.
-    Fullscreen(
-        position="topleft",
-        title="Enter fullscreen",
-        title_cancel="Exit fullscreen",
-        force_separate_button=True
-    ).add_to(route_map)
 
-    # Separate feature groups let users turn either route on/off.
-    shortest_layer = folium.FeatureGroup(
-        name="Shortest-distance route",
-        show=True
-    )
-    fastest_layer = folium.FeatureGroup(
-        name="Fastest estimated-time route",
-        show=True
-    )
-
-    # White casing makes each route easier to distinguish from busy roads.
-    folium.PolyLine(
-        shortest_coords,
-        color="#FFFFFF",
-        weight=10,
-        opacity=0.95,
-        interactive=False
-    ).add_to(shortest_layer)
-    folium.PolyLine(
-        shortest_coords,
-        color="#2563EB",
-        weight=6,
-        opacity=0.95,
-        tooltip=f"Shortest route · {shortest_km:.2f} km · {shortest_min:.1f} min"
-    ).add_to(shortest_layer)
-
-    folium.PolyLine(
-        fastest_coords,
-        color="#FFFFFF",
-        weight=9,
-        opacity=0.95,
-        interactive=False
-    ).add_to(fastest_layer)
-    folium.PolyLine(
-        fastest_coords,
-        color="#16A34A",
-        weight=5,
-        opacity=0.98,
-        tooltip=f"Fastest route · {fastest_km:.2f} km · {fastest_min:.1f} min"
-    ).add_to(fastest_layer)
-
-    shortest_layer.add_to(route_map)
-    fastest_layer.add_to(route_map)
-
-    # Clear, compact origin and destination markers.
-    folium.Marker(
-        location=origin,
-        tooltip="Origin",
-        popup="<b>Origin</b><br>Minneapolis city centre",
-        icon=folium.Icon(color="blue", icon="play")
-    ).add_to(route_map)
-
-    folium.Marker(
-        location=destination,
-        tooltip="Destination",
-        popup="<b>Destination</b><br>Destination point",
-        icon=folium.Icon(color="red", icon="flag")
-    ).add_to(route_map)
-
-    # Allow the audience to toggle either route independently.
-    folium.LayerControl(
-        position="topleft",
-        collapsed=True
-    ).add_to(route_map)
-
-    # Floating route comparison panel.
-    summary_html = f"""
-    <style>
-      .up-panel, .up-legend {{
-        box-sizing: border-box;
-        font-family: Inter, "Segoe UI", Arial, sans-serif;
-        color: #172033;
-        background: rgba(255,255,255,0.97);
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        box-shadow: 0 8px 28px rgba(15,23,42,0.16);
-        backdrop-filter: blur(8px);
-      }}
-      .up-panel {{
-        position: fixed; top: 16px; right: 16px; z-index: 9999;
-        width: 300px; padding: 18px;
-      }}
-      .up-brand {{ display:flex; align-items:center; gap:10px; margin-bottom:5px; }}
-      .up-logo {{
-        width:34px; height:34px; display:flex; align-items:center;
-        justify-content:center; border-radius:10px; color:white;
-        font-size:18px; font-weight:800; background:#0f766e;
-      }}
-      .up-title {{ font-size:17px; font-weight:750; letter-spacing:-0.3px; }}
-      .up-subtitle {{ color:#64748b; font-size:11px; margin:0 0 15px 44px; }}
-      .up-route {{
-        border:1px solid #e5eaf1; border-radius:12px;
-        padding:12px; margin-top:10px;
-      }}
-      .up-route-head {{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; }}
-      .up-dot {{ width:9px; height:9px; border-radius:50%; display:inline-block; }}
-      .up-metrics {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }}
-      .up-metric-label {{ font-size:10px; color:#64748b; margin-bottom:3px; }}
-      .up-metric-value {{ font-size:17px; font-weight:750; letter-spacing:-0.4px; }}
-      .up-fastest {{ background:#f0fdf4; border-color:#bbf7d0; }}
-      .up-savings {{
-        margin-top:12px; padding:10px 11px; border-radius:10px;
-        background:#ecfdf5; color:#166534; font-size:12px; line-height:1.45;
-      }}
-      .up-note {{ margin-top:12px; color:#64748b; font-size:10px; line-height:1.45; }}
-      .up-legend {{ position:fixed; bottom:24px; left:24px; z-index:9999; padding:13px 15px; min-width:200px; }}
-      .up-legend-title {{ font-size:12px; font-weight:750; margin-bottom:10px; }}
-      .up-legend-row {{ display:flex; align-items:center; gap:9px; font-size:11px; margin:7px 0; color:#334155; }}
-      .up-line {{ width:23px; height:4px; border-radius:4px; display:inline-block; }}
-      .up-pin {{ width:9px; height:9px; border-radius:50%; display:inline-block; }}
-      @media (max-width: 600px) {{
-        .up-panel {{ width: min(270px, calc(100vw - 28px)); top:10px; right:10px; padding:13px; }}
-        .up-legend {{ left:10px; bottom:12px; min-width:170px; padding:10px 12px; }}
-        .up-metric-value {{ font-size:15px; }}
-      }}
-    </style>
-
-    <div class="up-panel">
-      <div class="up-brand">
-        <div class="up-logo">U</div>
-        <div class="up-title">UrbanPulse</div>
-      </div>
-      <div class="up-subtitle">SMART ROUTE COMPARISON</div>
-
-      <div class="up-route">
-        <div class="up-route-head">
-          <span class="up-dot" style="background:#2563EB"></span>
-          <span>Shortest distance</span>
-        </div>
-        <div class="up-metrics">
-          <div>
-            <div class="up-metric-label">DISTANCE</div>
-            <div class="up-metric-value">{shortest_km:.2f} <span style="font-size:11px;font-weight:600">km</span></div>
-          </div>
-          <div>
-            <div class="up-metric-label">EST. TIME</div>
-            <div class="up-metric-value">{shortest_min:.1f} <span style="font-size:11px;font-weight:600">min</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="up-route up-fastest">
-        <div class="up-route-head">
-          <span class="up-dot" style="background:#16A34A"></span>
-          <span>Fastest estimated time</span>
-        </div>
-        <div class="up-metrics">
-          <div>
-            <div class="up-metric-label">DISTANCE</div>
-            <div class="up-metric-value">{fastest_km:.2f} <span style="font-size:11px;font-weight:600">km</span></div>
-          </div>
-          <div>
-            <div class="up-metric-label">EST. TIME</div>
-            <div class="up-metric-value">{fastest_min:.1f} <span style="font-size:11px;font-weight:600">min</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="up-savings">
-        <strong>⚡ Faster by {abs(time_saved):.1f} minutes</strong><br>
-        {abs(extra_distance):.2f} km {'longer' if extra_distance > 0 else 'shorter'} than the shortest route.
-      </div>
-      <div class="up-note">
-        Travel times are estimates based on road-speed data, not live traffic.
-      </div>
-    </div>
-    """
-
-    legend_html = """
-    <div class="up-legend">
-      <div class="up-legend-title">MAP LEGEND</div>
-      <div class="up-legend-row"><span class="up-line" style="background:#2563EB"></span> Shortest-distance route</div>
-      <div class="up-legend-row"><span class="up-line" style="background:#16A34A"></span> Fastest-time route</div>
-      <div class="up-legend-row"><span class="up-pin" style="background:#2878D0"></span> Origin</div>
-      <div class="up-legend-row"><span class="up-pin" style="background:#DC2626"></span> Destination</div>
-      <div style="border-top:1px solid #e2e8f0;margin-top:10px;padding-top:9px;color:#64748b;font-size:10px">
-        Use the layer control to show or hide routes.
-      </div>
-    </div>
-    """
-
-    route_map.get_root().html.add_child(folium.Element(summary_html))
-    route_map.get_root().html.add_child(folium.Element(legend_html))
-
-    # Frame both routes with some breathing room.
-    all_route_coords = shortest_coords + fastest_coords
-    route_map.fit_bounds(all_route_coords, padding=(55, 55))
-
-    route_map.save(str(MAP_FILE))
-    print(f"\nInteractive map saved to: {MAP_FILE}")
-    return route_map
+def _route_distance_km(path):
+    graph = get_graph()
+    metres = 0.0
+    for u, v in zip(path[:-1], path[1:]):
+        data = graph.get_edge_data(u, v)
+        if data:
+            metres += float(_edge_for_weight(data, "length").get("length", 0.0) or 0.0)
+    return metres / 1000.0
 
 
-def main():
-    graph = build_road_network(PLACE)
+def _route_time_minutes(path):
+    graph = get_graph()
+    seconds = 0.0
+    for u, v in zip(path[:-1], path[1:]):
+        data = graph.get_edge_data(u, v)
+        if data:
+            seconds += float(_edge_for_weight(data, "travel_time").get("travel_time", 0.0) or 0.0)
+    return seconds / 60.0
 
-    # Example coordinates: Minneapolis city centre to the
-    # University of Minnesota area. Coordinates are (latitude, longitude).
-    origin = (44.9778, -93.2650)
-    destination = (44.9396, -93.1660)
 
-    shortest_route, fastest_route = find_routes(graph, origin, destination)
+def _coordinates(path):
+    graph = get_graph()
+    return [[float(graph.nodes[n]["y"]), float(graph.nodes[n]["x"])] for n in path]
 
-    print("Same route:", shortest_route == fastest_route)
-    print("Shortest route nodes:", len(shortest_route))
-    print("Fastest route nodes:", len(fastest_route))
 
-    shortest_km, shortest_min = route_metrics(graph, shortest_route)
-    fastest_km, fastest_min = route_metrics(graph, fastest_route)
+def _route_for_points(origin, destination):
+    graph = get_graph()
+    try:
+        start = nearest_node(float(origin["lat"]), float(origin.get("lon", origin.get("lng"))))
+        end = nearest_node(float(destination["lat"]), float(destination.get("lon", destination.get("lng"))))
+        shortest = nx.shortest_path(graph, start, end, weight="length", method="dijkstra")
+        fastest = nx.shortest_path(graph, start, end, weight="travel_time", method="dijkstra")
+    except (nx.NetworkXNoPath, nx.NodeNotFound, ValueError, KeyError) as exc:
+        raise ValueError(
+            "No route was found on the downloaded Minneapolis road network. "
+            "Try locations within Minneapolis and closer to the covered road network."
+        ) from exc
 
-    print("\n--- Route Comparison ---")
-    print(
-        f"Shortest route: {shortest_km:.2f} km, "
-        f"estimated {shortest_min:.1f} minutes"
-    )
-    print(
-        f"Fastest route:  {fastest_km:.2f} km, "
-        f"estimated {fastest_min:.1f} minutes"
-    )
+    def pack(path):
+        return {
+            "coordinates": _coordinates(path),
+            "distance_km": round(_route_distance_km(path), 2),
+            "time_min": round(_route_time_minutes(path), 1),
+        }
 
-    create_route_map(
-        graph, shortest_route, fastest_route, origin, destination
-    )
+    return {
+        "origin": origin,
+        "destination": destination,
+        "shortest": pack(shortest),
+        "fastest": pack(fastest),
+    }
+
+
+@app.get("/")
+def index():
+    return flask.Response(PAGE, mimetype="text/html")
+
+
+@app.get("/api/defaults")
+def defaults():
+    try:
+        return jsonify(_route_for_points(DEFAULT_ORIGIN, DEFAULT_DESTINATION))
+    except Exception as exc:
+        app.logger.exception("Could not calculate default routes")
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.post("/api/route")
+def calculate_route():
+    data = request.get_json(silent=True) or {}
+    try:
+        origin = dict(data.get("origin") or {})
+        destination = dict(data.get("destination") or {})
+        for label, point in (("Origin", origin), ("Destination", destination)):
+            if "lat" not in point or ("lon" not in point and "lng" not in point):
+                raise ValueError(f"{label} needs latitude and longitude coordinates.")
+            point["lat"] = float(point["lat"])
+            point["lon"] = float(point.get("lon", point.get("lng")))
+            if not (-90 <= point["lat"] <= 90 and -180 <= point["lon"] <= 180):
+                raise ValueError(f"{label} coordinates are invalid.")
+        return jsonify(_route_for_points(origin, destination))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        app.logger.exception("Route calculation failed")
+        return jsonify({"error": f"Route calculation failed: {exc}"}), 500
+
+
+PAGE = r"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UrbanPulse | Interactive Route Optimizer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#0b1220;--panel:#111c2e;--panel2:#17253b;--line:#263750;--text:#e8effa;--muted:#9aacc5;--blue:#5aa9ff;--teal:#42d6c3;--orange:#ffb86b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,Segoe UI,Arial,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;border-bottom:1px solid var(--line);background:#0d1728}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#48d7c3,#438bff);display:grid;place-items:center;color:#071321;font-size:20px;font-weight:900}
+h1{font-size:18px;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:3px}.status{color:var(--teal);font-size:12px}
+main{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;padding:16px;min-height:calc(100vh - 76px)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}.panel h2{font-size:14px;margin:0 0 14px}.field{margin-bottom:14px}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+.inputrow{display:flex;gap:7px}.inputrow input{min-width:0;flex:1}input{background:#0a1424;border:1px solid #30435e;border-radius:9px;color:var(--text);padding:10px 11px;width:100%;outline:none}input:focus{border-color:var(--blue)}
+button{cursor:pointer;border:1px solid #354a66;background:#1a2a42;color:var(--text);padding:9px 11px;border-radius:9px;font-weight:600}button:hover{filter:brightness(1.15)}button.primary{background:var(--blue);border-color:var(--blue);color:#071321}button.small{padding:8px 10px;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.hint{color:var(--muted);font-size:12px;margin:12px 0 16px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.metric{padding:13px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}.metric .name{font-size:11px;color:var(--muted)}.metric .value{font-size:21px;font-weight:750;margin:5px 0 2px}.metric .unit{font-size:11px;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.blue{background:var(--blue)}.teal{background:var(--teal)}
+#map{height:calc(100vh - 112px);min-height:520px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}.mapwrap{min-width:0;position:relative}.mapbadge{position:absolute;z-index:500;top:12px;left:12px;background:#0b1220e8;border:1px solid var(--line);padding:9px 12px;border-radius:10px;font-size:12px;max-width:calc(100% - 24px)}
+#message{white-space:pre-wrap;color:var(--orange);font-size:12px;margin-top:12px;min-height:18px}
+@media(max-width:850px){main{grid-template-columns:1fr}.mapwrap{order:1}aside{order:2}#map{height:58vh;min-height:400px}header{padding:14px 16px}}
+</style></head>
+<body>
+<header><div class="brand"><div class="logo">U</div><div><h1>UrbanPulse</h1><div class="sub">Interactive Route Optimizer · Minneapolis</div></div></div><div class="status">● Road-network routing</div></header>
+<main>
+<aside class="panel">
+<h2>Plan your journey</h2>
+<div class="field"><label for="originSearch">Origin</label><div class="inputrow"><input id="originSearch" placeholder="Search a Minneapolis place"><button class="small" onclick="searchPlace('origin')">Find</button></div></div>
+<div class="field"><label for="destinationSearch">Destination</label><div class="inputrow"><input id="destinationSearch" placeholder="Search a destination"><button class="small" onclick="searchPlace('destination')">Find</button></div></div>
+<div class="actions"><button onclick="startPick('origin')">Pick origin on map</button><button onclick="startPick('destination')">Pick destination</button></div>
+<div class="hint" id="pickHint">Choose a point using search or the map. If no pick button is active, map clicks alternate between origin and destination.</div>
+<button class="primary" style="width:100%" onclick="compareRoutes()">Compare routes</button><button style="width:100%;margin-top:8px" onclick="resetRoute()">Reset example</button>
+<div id="message"></div>
+<div class="metrics">
+<div class="metric"><div class="name"><span class="dot blue"></span>Shortest distance</div><div class="value" id="shortDistance">—</div><div class="unit" id="shortTime">Estimated time: —</div></div>
+<div class="metric"><div class="name"><span class="dot teal"></span>Fastest estimated time</div><div class="value" id="fastDistance">—</div><div class="unit" id="fastTime">Estimated time: —</div></div>
+</div>
+<div class="hint">Coverage is limited to the downloaded Minneapolis driving network. Search uses Photon; map tiles use OpenStreetMap.</div>
+</aside>
+<section class="mapwrap"><div class="mapbadge" id="mapBadge">Loading routes…</div><div id="map"></div></section>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const DEFAULT_ORIGIN=__DEFAULT_ORIGIN__;
+const DEFAULT_DESTINATION=__DEFAULT_DESTINATION__;
+const map=L.map('map').setView([44.9778,-93.2650],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+let origin={...DEFAULT_ORIGIN},destination={...DEFAULT_DESTINATION},originMarker=null,destinationMarker=null,shortLine=null,fastLine=null,pickMode=null,clickCount=0;
+function say(msg){document.getElementById('message').textContent=msg||''}
+function badge(msg){document.getElementById('mapBadge').textContent=msg}
+function fmtTime(n){if(n<60)return `${Math.round(n)} min`;return `${Math.floor(n/60)} h ${Math.round(n%60)} min`}
+function updateMarkers(){
+ if(originMarker)map.removeLayer(originMarker);if(destinationMarker)map.removeLayer(destinationMarker);
+ originMarker=L.marker([origin.lat,origin.lon]).addTo(map).bindPopup('Origin: '+(origin.name||'Selected origin'));
+ destinationMarker=L.marker([destination.lat,destination.lon]).addTo(map).bindPopup('Destination: '+(destination.name||'Selected destination'));
+ document.getElementById('originSearch').value=origin.name||`${origin.lat.toFixed(5)}, ${origin.lon.toFixed(5)}`;
+ document.getElementById('destinationSearch').value=destination.name||`${destination.lat.toFixed(5)}, ${destination.lon.toFixed(5)}`;
+}
+function clearLines(){if(shortLine)map.removeLayer(shortLine);if(fastLine)map.removeLayer(fastLine);shortLine=fastLine=null}
+function drawRoutes(data){
+ clearLines();shortLine=L.polyline(data.shortest.coordinates,{color:'#5aa9ff',weight:6,opacity:.92}).addTo(map);
+ fastLine=L.polyline(data.fastest.coordinates,{color:'#42d6c3',weight:4,opacity:.95,dashArray:'9 7'}).addTo(map);
+ document.getElementById('shortDistance').textContent=data.shortest.distance_km+' km';
+ document.getElementById('shortTime').textContent='Estimated time: '+fmtTime(data.shortest.time_min);
+ document.getElementById('fastDistance').textContent=data.fastest.distance_km+' km';
+ document.getElementById('fastTime').textContent='Estimated time: '+fmtTime(data.fastest.time_min);
+ updateMarkers();const bounds=L.latLngBounds(data.shortest.coordinates.concat(data.fastest.coordinates));
+ bounds.extend([origin.lat,origin.lon]);bounds.extend([destination.lat,destination.lon]);map.fitBounds(bounds.pad(.12));
+ badge('Routes calculated · shortest distance vs. fastest estimated time');say('');
+}
+async function compareRoutes(){
+ say('Calculating routes…');
+ try{const r=await fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({origin,destination})});
+ const d=await r.json();if(!r.ok)throw new Error(d.error||'Could not calculate routes.');drawRoutes(d);}
+ catch(e){say(e.message);badge('Route calculation needs attention');}
+}
+async function loadDefaults(){
+ try{const r=await fetch('/api/defaults');const d=await r.json();if(!r.ok||d.error)throw new Error(d.error||'Could not load routes.');drawRoutes(d);}
+ catch(e){say(e.message);badge('Unable to load routes');}
+}
+function startPick(which){pickMode=which;document.getElementById('pickHint').textContent=`Click the map to set the ${which}.`;say('')}
+map.on('click',e=>{
+ const p={lat:e.latlng.lat,lon:e.latlng.lng,name:`Map point (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`};
+ if(pickMode==='origin'){origin=p;pickMode=null;}else if(pickMode==='destination'){destination=p;pickMode=null;}
+ else if(clickCount%2===0){origin=p;clickCount++;}else{destination=p;clickCount++;}
+ updateMarkers();say('Location selected. Click Compare routes to recalculate.');
+});
+async function searchPlace(which){
+ const input=document.getElementById(which==='origin'?'originSearch':'destinationSearch'),q=input.value.trim();
+ if(!q){say('Enter a place name first.');return;}say('Searching for a place…');
+ try{
+  const r=await fetch('https://photon.komoot.io/api/?limit=8&q='+encodeURIComponent(q+' Minneapolis Minnesota'));
+  if(!r.ok)throw new Error('Place search service did not respond.');
+  const d=await r.json(),features=(d.features||[]).filter(f=>{
+   const p=f.properties||{},txt=[p.city,p.county,p.state,p.country].join(' ').toLowerCase();
+   return txt.includes('minneapolis')||txt.includes('minnesota');
+  });
+  if(!features.length)throw new Error('No matching Minneapolis place found. Try a more specific landmark or address.');
+  const f=features[0],c=f.geometry.coordinates,p=f.properties||{},name=[p.name,p.street,p.city].filter(Boolean).join(', ')||q;
+  const point={name,lon:c[0],lat:c[1]};if(which==='origin')origin=point;else destination=point;
+  updateMarkers();say('Place selected. Click Compare routes to calculate both routes.');map.setView([point.lat,point.lon],15);
+ }catch(e){say(e.message)}
+}
+function resetRoute(){origin={...DEFAULT_ORIGIN};destination={...DEFAULT_DESTINATION};clickCount=0;pickMode=null;updateMarkers();loadDefaults()}
+updateMarkers();loadDefaults();
+</script></body></html>
+""".replace("__DEFAULT_ORIGIN__", json.dumps(DEFAULT_ORIGIN)).replace(
+    "__DEFAULT_DESTINATION__", json.dumps(DEFAULT_DESTINATION)
+)
 
 
 if __name__ == "__main__":
-    main()
-    
+    print("=" * 58)
+    print(APP_TITLE)
+    print("=" * 58)
+    print(f"Project root: {PROJECT_ROOT}")
+    print(f"Road graph:   {GRAPH_PATH}")
+    get_graph()
+    url = f"http://{HOST}:{PORT}"
+    print(f"\nOpen in your browser: {url}")
+    print("Keep this terminal open while using UrbanPulse.")
+    threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    app.run(host=HOST, port=PORT, debug=False, threaded=True)
