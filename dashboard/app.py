@@ -109,6 +109,12 @@ def chart(name, caption=None):
 
     try:
         st.image(str(path), caption=caption, use_container_width=True)
+        st.info(
+            "Key Insight: Average traffic volume is highest around "
+            "4 PM (16:00) and lowest around 3 AM (03:00). "
+            "This indicates a strong daily traffic pattern that "
+            "can help identify peak and off-peak periods."
+            )
     except Exception as exc:
         st.error(f"Could not display {name}: {exc}")
 
