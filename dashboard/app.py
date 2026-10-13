@@ -109,6 +109,13 @@ def chart(name, caption=None):
 
     try:
         st.image(str(path), caption=caption, use_container_width=True)
+        st.info(
+            "Insight: Traffic volume varies throughout the day, "
+                "with higher average traffic during peak commuting hours. "
+                "This pattern can help identify periods when traffic "
+                "management and route planning are most important."
+            )
+    
     except Exception as exc:
         st.error(f"Could not display {name}: {exc}")
 
