@@ -304,6 +304,72 @@ button{cursor:pointer;border:1px solid #354a66;background:#1a2a42;color:var(--te
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.hint{color:var(--muted);font-size:12px;margin:12px 0 16px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.metric{padding:13px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}.metric .name{font-size:11px;color:var(--muted)}.metric .value{font-size:21px;font-weight:750;margin:5px 0 2px}.metric .unit{font-size:11px;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.blue{background:var(--blue)}.teal{background:var(--teal)}.purple{background:#b388ff}
 #map{height:calc(100vh - 112px);min-height:520px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}.mapwrap{min-width:0;position:relative}.mapbadge{position:absolute;z-index:500;top:12px;left:12px;background:#0b1220e8;border:1px solid var(--line);padding:9px 12px;border-radius:10px;font-size:12px;max-width:calc(100% - 24px)}
 #message{white-space:pre-wrap;color:var(--orange);font-size:12px;margin-top:12px;min-height:18px}
+
+
+.recommendation {
+    margin-top: 14px;
+    border: 1px solid #7655b7;
+    background: linear-gradient(135deg, #1b2540, #211b3a);
+}
+
+.recommendation .name {
+    color: #c4a5ff;
+    letter-spacing: 0.7px;
+    font-weight: 700;
+}
+
+.recommendation .value {
+    font-size: 17px;
+    line-height: 1.4;
+}
+
+.recommendation .unit {
+    line-height: 1.6;
+}
+
+
+.comparison-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.comparison-table {
+    width: 100%;
+    min-width: 470px;
+    border-collapse: collapse;
+    font-size: 11px;
+    text-align: left;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.comparison-table th {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.comparison-table td {
+    color: var(--text);
+}
+
+.comparison-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.route-name {
+    font-weight: 700;
+}
+
+.route-blue { color: #5aa9ff !important; }
+.route-green { color: #22c55e !important; }
+.route-purple { color: #b388ff !important; }
+
+
 @media(max-width:850px){main{grid-template-columns:1fr}.mapwrap{order:1}aside{order:2}#map{height:58vh;min-height:400px}header{padding:14px 16px}}
 </style></head>
 <body>
@@ -330,6 +396,43 @@ button{cursor:pointer;border:1px solid #354a66;background:#1a2a42;color:var(--te
 <div class="metric" style="grid-column:1/-1"><div class="name"><span class="dot purple"></span>Your custom route</div><div class="value" id="customDistance">—</div><div class="unit" id="customTime">Estimated time: —</div></div>
 </div>
 <div class="hint" id="explain"></div>
+
+<div class="metric recommendation" id="recommendationCard">
+    <div class="name">✦ URBANPULSE RECOMMENDATION</div>
+    <div class="value" id="recommendationTitle">Calculating best route...</div>
+    <div class="unit" id="recommendationReason">
+        Adjust your route priorities to get a personalized recommendation.
+    </div>
+</div>
+
+
+<div class="metric" style="margin-top:14px; grid-column:1/-1;">
+    <div class="name">ROUTE COMPARISON</div>
+    <div class="unit" style="margin:6px 0 12px;">
+        Trade-offs compared with the fastest route
+    </div>
+
+    <div class="comparison-scroll">
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Route</th>
+                    <th>Distance</th>
+                    <th>Time</th>
+                    <th>Signals</th>
+                    <th>Trade-off vs. fastest</th>
+                </tr>
+            </thead>
+            <tbody id="comparisonBody">
+                <tr>
+                    <td colspan="5">Calculate a route to see comparisons.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
 <div class="hint">Coverage is limited to the downloaded Minneapolis driving network. Time-of-day effects are a modeled estimate from historical traffic patterns, not live traffic. Search uses Photon; map tiles use OpenStreetMap.</div>
 </aside>
 <section class="mapwrap"><div class="mapbadge" id="mapBadge">Loading routes…</div><div id="map"></div></section>
@@ -353,10 +456,169 @@ function updateMarkers(){
 }
 function clearLines(){[shortLine,fastLine,customLine].forEach(l=>{if(l)map.removeLayer(l)});shortLine=fastLine=customLine=null}
 function getPrefs(){return{w_time:+document.getElementById('wTime').value,w_dist:+document.getElementById('wDist').value,w_signal:+document.getElementById('wSig').value,hour:+document.getElementById('hourSel').value}}
+
+
+function updateRecommendation(data) {
+    const routes = [
+        { key: "shortest", name: "Blue route — Shortest distance", color: "#5aa9ff" },
+        { key: "fastest", name: "Green route — Fastest estimated time", color: "#22c55e" },
+        { key: "custom", name: "Purple route — Your custom route", color: "#b388ff" }
+    ];
+
+    const weights = {
+        time: Math.max(0, Number(document.getElementById("wTime").value)),
+        distance: Math.max(0, Number(document.getElementById("wDist").value)),
+        signals: Math.max(0, Number(document.getElementById("wSig").value))
+    };
+
+    const totalWeight = weights.time + weights.distance + weights.signals;
+
+    // If all sliders are zero, recommend the custom route by default.
+    if (totalWeight === 0) {
+        document.getElementById("recommendationTitle").textContent =
+            "Purple route — Your custom route";
+
+        document.getElementById("recommendationReason").textContent =
+            "All priorities are set to zero. Increase a priority to personalize the recommendation.";
+
+        return;
+    }
+
+    const values = {
+        time: routes.map(r => Number(data[r.key].time_min)),
+        distance: routes.map(r => Number(data[r.key].distance_km)),
+        signals: routes.map(r => Number(data[r.key].signals))
+    };
+
+    // Normalize metrics so minutes, kilometres, and signal counts
+    // can be compared fairly.
+    function normalized(value, list) {
+        const min = Math.min(...list);
+        const max = Math.max(...list);
+        return max === min ? 0 : (value - min) / (max - min);
+    }
+
+    const ranked = routes.map((route, i) => {
+        const score =
+            weights.time / totalWeight *
+                normalized(values.time[i], values.time) +
+            weights.distance / totalWeight *
+                normalized(values.distance[i], values.distance) +
+            weights.signals / totalWeight *
+                normalized(values.signals[i], values.signals);
+
+        return { ...route, score, stats: data[route.key] };
+    }).sort((a, b) => a.score - b.score);
+
+    const best = ranked[0];
+
+    let reason = "This route best matches your current priority settings. ";
+    const priorities = [
+        { key: "time", weight: weights.time, label: "travel time" },
+        { key: "distance", weight: weights.distance, label: "short distance" },
+        { key: "signals", weight: weights.signals, label: "avoiding traffic signals" }
+    ].sort((a, b) => b.weight - a.weight);
+
+    if (priorities[0].weight > 0) {
+        reason += "Your strongest priority is " + priorities[0].label + ". ";
+    }
+
+    reason += "Estimated time: " + best.stats.time_min +
+        " min; distance: " + best.stats.distance_km +
+        " km; traffic signals: " + best.stats.signals + ".";
+
+    document.getElementById("recommendationTitle").textContent = best.name;
+    document.getElementById("recommendationTitle").style.color = best.color;
+    document.getElementById("recommendationReason").textContent = reason;
+}
+
+
+function updateComparisonTable(data) {
+    const fastest = data.fastest;
+
+    const routes = [
+        {
+            key: "shortest",
+            name: "Shortest",
+            className: "route-blue"
+        },
+        {
+            key: "fastest",
+            name: "Fastest",
+            className: "route-green"
+        },
+        {
+            key: "custom",
+            name: "Custom",
+            className: "route-purple"
+        }
+    ];
+
+    function difference(value, unit, digits = 1) {
+        const rounded = Number(Number(value).toFixed(digits));
+
+        if (rounded === 0) {
+            return "Same";
+        }
+
+        return `${rounded > 0 ? "+" : ""}${rounded.toFixed(digits)} ${unit}`;
+    }
+
+    function tradeoff(route) {
+        if (route.key === "fastest") {
+            return "Baseline — fastest";
+        }
+
+        const stats = data[route.key];
+
+        const timeDiff = stats.time_min - fastest.time_min;
+        const distanceDiff = stats.distance_km - fastest.distance_km;
+        const signalDiff = stats.signals - fastest.signals;
+
+        const parts = [];
+
+        if (Math.abs(timeDiff) >= 0.05) {
+            parts.push(difference(timeDiff, "min"));
+        }
+
+        if (Math.abs(distanceDiff) >= 0.005) {
+            parts.push(difference(distanceDiff, "km", 2));
+        }
+
+        if (signalDiff !== 0) {
+            parts.push(difference(signalDiff, "signals", 0));
+        }
+
+        return parts.length ? parts.join(" · ") : "Very similar";
+    }
+
+    document.getElementById("comparisonBody").innerHTML =
+        routes.map(route => {
+            const stats = data[route.key];
+
+            return `
+                <tr>
+                    <td class="route-name ${route.className}">
+                        ${route.name}
+                    </td>
+                    <td>${Number(stats.distance_km).toFixed(2)} km</td>
+                    <td>${Number(stats.time_min).toFixed(1)} min</td>
+                    <td>${stats.signals}</td>
+                    <td>${tradeoff(route)}</td>
+                </tr>
+            `;
+        }).join("");
+}
+
+
 function drawRoutes(data){
  clearLines();
  shortLine=L.polyline(data.shortest.coordinates,{color:'#5aa9ff',weight:6,opacity:.92}).addTo(map);
- fastLine=L.polyline(data.fastest.coordinates,{color:'#42d6c3',weight:4,opacity:.95,dashArray:'9 7'}).addTo(map);
+ fastLine=L.polyline(data.fastest.coordinates,{
+    color:'#22c55e',
+    weight:5,
+    opacity:0.95
+}).addTo(map);
  customLine=L.polyline(data.custom.coordinates,{color:'#b388ff',weight:5,opacity:.95}).addTo(map);
  const sig=r=>' · '+r.signals+' signals';
  document.getElementById('shortDistance').textContent=data.shortest.distance_km+' km';
@@ -366,6 +628,8 @@ function drawRoutes(data){
  document.getElementById('customDistance').textContent=data.custom.distance_km+' km';
  document.getElementById('customTime').textContent='Estimated time: '+fmtTime(data.custom.time_min)+sig(data.custom);
  document.getElementById('explain').textContent=data.explanation||'';
+ updateRecommendation(data);
+ updateComparisonTable(data);
  updateMarkers();
  const bounds=L.latLngBounds(data.shortest.coordinates.concat(data.fastest.coordinates,data.custom.coordinates));
  bounds.extend([origin.lat,origin.lon]);bounds.extend([destination.lat,destination.lon]);map.fitBounds(bounds.pad(.12));
