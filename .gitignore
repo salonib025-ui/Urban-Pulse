@@ -20,3 +20,15 @@ venv/
 *.tmp
 
 cache/
+
+# Local backup scripts
+*_backup.py
+*_before_shap.py
+*_before_forecast_upgrade.py
+*_conflict_backup.py
+
+# Generated model artifacts
+outputs/*.joblib
+
+# Debug artifacts
+outputs/route_debug.html

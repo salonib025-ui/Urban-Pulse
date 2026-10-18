@@ -370,6 +370,578 @@ button{cursor:pointer;border:1px solid #354a66;background:#1a2a42;color:var(--te
 .route-purple { color: #b388ff !important; }
 
 
+/* ===== URBAN PULSE: DARK COMMAND CENTER UI ===== */
+
+:root {
+  --lime: #c5f36b;
+  --lime-soft: rgba(197, 243, 107, 0.12);
+  --bg: #080d0b;
+  --panel: #101713;
+  --panel2: #17221b;
+  --line: #2a3a30;
+  --text: #edf5ee;
+  --muted: #9eafa2;
+  --orange: #ffc16e;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(93, 143, 72, 0.10), transparent 38%),
+    var(--bg);
+  color: var(--text);
+  letter-spacing: 0.1px;
+}
+
+header {
+  background: rgba(11, 18, 13, 0.97);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 26px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+}
+
+.logo {
+  background: linear-gradient(135deg, #d5ff83, #83c84c);
+  color: #11190c;
+  border-radius: 12px;
+  box-shadow: 0 0 24px rgba(197, 243, 107, 0.15);
+}
+
+h1 {
+  font-size: 19px;
+  letter-spacing: -0.4px;
+}
+
+.sub {
+  letter-spacing: 0.2px;
+}
+
+.status {
+  color: var(--lime);
+}
+
+main {
+  gap: 18px;
+  padding: 18px;
+}
+
+.panel {
+  background: linear-gradient(155deg, #121b15, #0e1511);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.panel h2 {
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 17px;
+}
+
+.field label {
+  letter-spacing: 0.25px;
+}
+
+input,
+select {
+  background: #0a110d;
+  border-color: #34483a;
+  border-radius: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px rgba(197, 243, 107, 0.10);
+}
+
+input[type=range] {
+  accent-color: var(--lime);
+}
+
+button {
+  border-radius: 10px;
+  transition: transform 0.18s ease, filter 0.18s ease,
+    border-color 0.18s ease;
+}
+
+button:hover {
+  filter: brightness(1.12);
+  border-color: #60775f;
+}
+
+button.primary {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #11190c;
+  font-weight: 800;
+  box-shadow: 0 4px 18px rgba(197, 243, 107, 0.12);
+}
+
+button.primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.metrics {
+  gap: 11px;
+}
+
+.metric {
+  background: linear-gradient(145deg, #19251c, #131c16);
+  border: 1px solid #304334;
+  border-radius: 14px;
+  padding: 15px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.metric:hover {
+  border-color: #617a4b;
+  transform: translateY(-2px);
+}
+
+.metric .name {
+  text-transform: uppercase;
+  letter-spacing: 0.65px;
+  font-size: 10px;
+}
+
+.metric .value {
+  font-size: 23px;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric .unit {
+  line-height: 1.5;
+}
+
+#map {
+  border: 1px solid #304236;
+  border-radius: 17px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.20);
+}
+
+
+.mapbadge {
+  background: rgba(10, 17, 12, 0.96);
+  color: #edf5ee;
+  border: 1px solid #40563f;
+  border-radius: 12px;
+  padding: 11px 14px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.32);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.6;
+  letter-spacing: 0.15px;
+  max-width: min(390px, calc(100% - 24px));
+}
+
+
+.legend-heading {
+  color: #c5f36b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  margin-bottom: 9px;
+}
+
+.legend-items {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #edf5ee;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.legend-line {
+  display: inline-block;
+  width: 20px;
+  height: 3px;
+  border-radius: 4px;
+}
+
+.shortest-line {
+  background: #5aa9ff;
+}
+
+.fastest-line {
+  background: #22c55e;
+}
+
+.custom-line {
+  background: #b388ff;
+}
+
+#message {
+  line-height: 1.6;
+}
+
+/* Keep the existing mobile layout working */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+
+/* ===== ROUTE INSIGHTS & COMPARISON POLISH ===== */
+
+.recommendation {
+  background:
+    radial-gradient(ellipse at top left, rgba(197, 243, 107, 0.10), transparent 65%),
+    linear-gradient(145deg, #172219, #101713);
+  border: 1px solid #50683b;
+  border-radius: 15px;
+  box-shadow: inset 3px 0 0 var(--lime);
+  padding: 17px;
+}
+
+.recommendation .name {
+  color: var(--lime);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 9px;
+}
+
+.recommendation .value {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin: 7px 0;
+}
+
+.recommendation .unit {
+  color: #b2c1b5;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.comparison-table {
+  border-spacing: 0;
+  font-size: 12px;
+}
+
+.comparison-table th {
+  background: #18231b;
+  color: #b5c6b8;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 12px 9px;
+  border-bottom: 1px solid #2b3b30;
+}
+
+.comparison-table tbody tr {
+  transition: background 0.18s ease;
+}
+
+.comparison-table tbody tr:hover {
+  background: rgba(197, 243, 107, 0.055);
+}
+
+.comparison-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.route-blue {
+  color: #68b6ff !important;
+  font-weight: 750;
+}
+
+.route-green {
+  color: #65e6a0 !important;
+  font-weight: 750;
+}
+
+.route-purple {
+  color: #c4a5ff !important;
+  font-weight: 750;
+}
+
+.comparison-scroll {
+  border: 1px solid #293a2e;
+  border-radius: 11px;
+  overflow-x: auto;
+}
+
+#explain {
+  line-height: 1.7;
+  padding: 2px 1px;
+}
+
+
+/* ===== POLISHED ROUTE METRIC CARDS ===== */
+
+.metrics {
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.metrics .metric {
+    position: relative;
+    overflow: hidden;
+    padding: 17px 16px 15px;
+    background: linear-gradient(
+        145deg,
+        rgba(25, 39, 57, 0.98),
+        rgba(15, 25, 39, 0.98)
+    );
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.12);
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* Subtle route-coloured accent at the top */
+.metrics .metric::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    opacity: 0.95;
+}
+
+.metrics .metric:nth-child(1)::before {
+    background: #5aa9ff;
+}
+
+.metrics .metric:nth-child(2)::before {
+    background: #42d6c3;
+}
+
+.metrics .metric:nth-child(3)::before {
+    background: #b388ff;
+}
+
+.metrics .metric:hover {
+    transform: translateY(-2px);
+    border-color: rgba(197, 243, 107, 0.35);
+    box-shadow: 0 9px 22px rgba(0, 0, 0, 0.2);
+}
+
+/* Card labels */
+.metrics .metric .name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 12px;
+    color: #b7c5d8;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 1px;
+    line-height: 1.5;
+    text-transform: uppercase;
+}
+
+/* Distance values */
+.metrics .metric .value {
+    margin: 0 0 8px;
+    color: #f2f7ff;
+    font-size: clamp(22px, 2vw, 28px);
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+/* Supporting estimated-time text */
+.metrics .metric .unit {
+    color: #91a5bd;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+/* Keep the custom route card spacious */
+.metrics .metric:nth-child(3) {
+    padding-top: 18px;
+    padding-bottom: 17px;
+}
+
+.metrics .metric:nth-child(3) .value {
+    font-size: clamp(24px, 2.2vw, 30px);
+}
+
+/* Preserve comfortable spacing on smaller screens */
+@media (max-width: 480px) {
+    .metrics {
+        gap: 9px;
+    }
+
+    .metrics .metric {
+        padding: 14px 11px 12px;
+    }
+
+    .metrics .metric .name {
+        font-size: 9px;
+        letter-spacing: 0.6px;
+    }
+
+    .metrics .metric .value {
+        font-size: 21px;
+    }
+}
+
+
+/* ===== COMPACT ROUTE COMPARISON TABLE ===== */
+
+.comparison-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    border-radius: 8px;
+}
+
+.comparison-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 10px;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 9px 3px;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    text-align: left;
+    vertical-align: middle;
+    line-height: 1.5;
+}
+
+.comparison-table th:first-child,
+.comparison-table td:first-child {
+    width: 24%;
+}
+
+.comparison-table th:nth-child(2),
+.comparison-table td:nth-child(2) {
+    width: 21%;
+}
+
+.comparison-table th:nth-child(3),
+.comparison-table td:nth-child(3) {
+    width: 17%;
+}
+
+.comparison-table th:nth-child(4),
+.comparison-table td:nth-child(4) {
+    width: 16%;
+}
+
+.comparison-table th:nth-child(5),
+.comparison-table td:nth-child(5) {
+    width: 22%;
+}
+
+.comparison-table th {
+    font-size: 8px;
+    letter-spacing: 0.1px;
+    line-height: 1.4;
+}
+
+.comparison-table td {
+    font-size: 9px;
+}
+
+
+/* ===== SIDEBAR TEXT READABILITY ===== */
+
+/* Field labels and slider labels */
+.panel .field label {
+    color: #c0cebf;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Helper text beneath the map-picking controls */
+.panel .hint,
+#explain {
+    color: #b7c6b8;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+/* Route metric card labels */
+.metrics .metric .name {
+    color: #c4d1df;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    line-height: 1.5;
+}
+
+/* Estimated travel time and signal details */
+.metrics .metric .unit {
+    color: #b0bfd1;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+/* Recommendation heading and explanation */
+.recommendation .name {
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.recommendation .unit {
+    color: #c0cec2;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+/* Keep input text comfortable to read */
+.panel input:not([type="range"]),
+.panel select {
+    font-size: 12px;
+}
+
+/* Keep the compact layout on smaller screens */
+@media (max-width: 480px) {
+    .metrics .metric .name {
+        font-size: 10px;
+    }
+
+    .metrics .metric .unit {
+        font-size: 11px;
+    }
+
+    .recommendation .unit,
+    .panel .hint,
+    #explain {
+        font-size: 11px;
+    }
+}
+
+
 @media(max-width:850px){main{grid-template-columns:1fr}.mapwrap{order:1}aside{order:2}#map{height:58vh;min-height:400px}header{padding:14px 16px}}
 </style></head>
 <body>
@@ -435,7 +1007,28 @@ button{cursor:pointer;border:1px solid #354a66;background:#1a2a42;color:var(--te
 
 <div class="hint">Coverage is limited to the downloaded Minneapolis driving network. Time-of-day effects are a modeled estimate from historical traffic patterns, not live traffic. Search uses Photon; map tiles use OpenStreetMap.</div>
 </aside>
-<section class="mapwrap"><div class="mapbadge" id="mapBadge">Loading routes…</div><div id="map"></div></section>
+
+<section class="mapwrap">
+  <div class="mapbadge" id="mapBadge">
+    <div class="legend-heading">ROUTE LEGEND</div>
+    <div class="legend-items">
+      <span class="legend-item">
+        <span class="legend-line shortest-line"></span>
+        Shortest
+      </span>
+      <span class="legend-item">
+        <span class="legend-line fastest-line"></span>
+        Fastest
+      </span>
+      <span class="legend-item">
+        <span class="legend-line custom-line"></span>
+        Custom
+      </span>
+    </div>
+  </div>
+  <div id="map"></div>
+</section>
+
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -633,7 +1226,7 @@ function drawRoutes(data){
  updateMarkers();
  const bounds=L.latLngBounds(data.shortest.coordinates.concat(data.fastest.coordinates,data.custom.coordinates));
  bounds.extend([origin.lat,origin.lon]);bounds.extend([destination.lat,destination.lon]);map.fitBounds(bounds.pad(.12));
- badge('Shortest (blue) · Fastest (teal, dashed) · Custom (purple)');say('');
+ say('');
 }
 async function compareRoutes(){
  say('Calculating routes…');
