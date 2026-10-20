@@ -14,7 +14,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = ROOT / "data" / "processed" / "metro_traffic_modeling.csv"
+DATA_PATH = ROOT / "data" / "processed" / "metro_traffic_cleaned.csv"
 OUTPUT_DIR = ROOT / "outputs"
 MODEL_PATH = OUTPUT_DIR / "explainable_traffic_model.joblib"
 IMPORTANCE_PATH = OUTPUT_DIR / "shap_global_importance.csv"

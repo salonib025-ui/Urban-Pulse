@@ -129,8 +129,27 @@ def main():
         .str.strip()
     )
 
-    # 7. Convert temperature from Kelvin to Celsius
+    
+    # 7. Handle invalid temperature values and convert to Celsius
+    # Zero Kelvin is not a valid ordinary weather observation.
+    invalid_temp = df["temp"].eq(0)
+
+    print("\nTEMPERATURE QUALITY CHECK")
+    print("-" * 40)
+    print(f"Invalid zero-Kelvin records: {int(invalid_temp.sum())}")
+
+    # Preserve the traffic records, but mark their temperatures as missing.
+    df.loc[invalid_temp, "temp"] = float("nan")
+
+    # Fill missing temperature values using nearby valid observations.
+    df["temp"] = df["temp"].interpolate(
+        method="linear",
+        limit_direction="both",
+    )
+
+    # Convert the corrected Kelvin values to Celsius.
     df["temp_celsius"] = df["temp"] - 273.15
+
 
     # 8. Create time-based features
     df["hour"] = df["date_time"].dt.hour
